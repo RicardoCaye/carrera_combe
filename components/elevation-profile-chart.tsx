@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceDot, CartesianGrid } from "recharts"
 import { Settings, Utensils, Droplet, BedDouble, Package, MapPin, ChevronLeft, ChevronRight } from "lucide-react"
 import { SEGMENTS_DATA } from "@/lib/data"
+import { parseGPXFile, generateElevationDataFromGPX, generateDetailedElevationData } from "@/lib/gpx-parser"
 
 interface ElevationProfileChartProps {
   currentSegmentId: number
@@ -15,6 +16,44 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
   const chartRef = useRef<HTMLDivElement>(null)
   const [chartWidth, setChartWidth] = useState(0)
   const [currentSegmentIndex, setCurrentSegmentIndex] = useState(0)
+  const [elevationData, setElevationData] = useState<any[]>([])
+  const [gpxData, setGpxData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [totalDistanceReal, setTotalDistanceReal] = useState(0)
+  const [minElevation, setMinElevation] = useState(0)
+  const [maxElevation, setMaxElevation] = useState(0)
+
+  // Cargar datos del GPX
+  useEffect(() => {
+    const loadGPXData = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch('/track_generado.gpx')
+        const gpxText = await response.text()
+        const gpxData = parseGPXFile(gpxText)
+        
+        if (gpxData && gpxData.tracks.length > 0) {
+          const elevationData = generateElevationDataFromGPX(gpxData.tracks[0].points)
+          setElevationData(elevationData)
+          setTotalDistanceReal(gpxData.totalDistance)
+          setMinElevation(gpxData.minElevation)
+          setMaxElevation(gpxData.maxElevation)
+        }
+      } catch (error) {
+        console.error('Error loading GPX data:', error)
+        // Fallback a datos generados si falla la carga del GPX
+        const fallbackData = generateDetailedElevationData()
+        setElevationData(fallbackData)
+        setTotalDistanceReal(320)
+        setMinElevation(1500)
+        setMaxElevation(3500)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadGPXData()
+  }, [])
 
   // Función para formatear duración
   const formatDuration = (hours?: number) => {
@@ -35,65 +74,6 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
     return results.segments.find((s: any) => s.id === segmentId)
   }
 
-  // Generate detailed elevation profile data starting from km 0
-  const generateElevationProfile = () => {
-    const points = []
-    let cumulativeDistance = 0
-    const baselineElevation = 1500
-    const numberOfLines = 5 // Always use mobile number of lines
-
-    // Add starting point at km 0
-    points.push({
-      distance: 0,
-      elevation: SEGMENTS_DATA[0]?.startElevationM || 1912,
-      ...Array.from({ length: numberOfLines }, (_, i) => ({
-        [`line_${i + 1}`]: baselineElevation + ((2500 - baselineElevation) / (numberOfLines + 1)) * (i + 1),
-      })).reduce((acc, curr) => ({ ...acc, ...curr }), {}),
-    })
-
-    SEGMENTS_DATA.forEach((segment) => {
-      const startDistance = cumulativeDistance
-      const endDistance = cumulativeDistance + segment.distanceKm
-      const startElevation = segment.startElevationM || 1912
-      const endElevation = segment.endElevationM || 1912
-
-      const numPoints = Math.max(4, Math.floor(segment.distanceKm / 4)) // Fewer points for mobile
-      for (let i = 1; i <= numPoints; i++) {
-        const progress = i / numPoints
-        const distance = startDistance + segment.distanceKm * progress
-        let elevation = startElevation + (endElevation - startElevation) * progress
-
-        if (i < numPoints) {
-          const variation =
-            Math.sin(progress * Math.PI * 3) * 80 +
-            Math.sin(progress * Math.PI * 6) * 40 +
-            Math.sin(progress * Math.PI * 12) * 20
-          elevation += variation
-        }
-
-        const finalElevation = Math.round(Math.max(1500, elevation))
-
-        const pointData: { [key: string]: number } = {
-          distance: Math.round(distance * 10) / 10,
-          elevation: finalElevation,
-        }
-
-        // Calculate the scaled values for the decorative lines
-        const totalHeight = finalElevation - baselineElevation
-        for (let j = 1; j <= numberOfLines; j++) {
-          const scaleFactor = j / (numberOfLines + 1)
-          pointData[`line_${j}`] = Math.round(baselineElevation + totalHeight * scaleFactor)
-        }
-
-        points.push(pointData)
-      }
-      cumulativeDistance = endDistance
-    })
-
-    return points
-  }
-
-  const elevationData = generateElevationProfile()
   const totalDistance = SEGMENTS_DATA[SEGMENTS_DATA.length - 1].cumulativeDistanceKm || 330.8
 
   const segmentsForDisplay = SEGMENTS_DATA.map((segment, index) => ({
@@ -130,8 +110,8 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
     if (active && payload && payload.length) {
       return (
         <div className="bg-white/95 backdrop-blur-sm p-2 border border-gray-300 rounded-lg shadow-lg text-xs">
-          <p className="font-bold text-gray-800">{`${label.toFixed(1)} km`}</p>
-          <p className="text-blue-600">{`${payload[0].value.toFixed(0)} m`}</p>
+          <p className="font-bold text-gray-800">{`${Number(label).toFixed(1)} km`}</p>
+          <p className="text-blue-600">{`${Math.round(Number(payload[0].value))} m`}</p>
         </div>
       )
     }
@@ -143,7 +123,7 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
     const leftMargin = 40 // Always use mobile margins
     const rightMargin = 20
     const availableWidth = chartWidth - leftMargin - rightMargin
-    const position = (distance / totalDistance) * availableWidth + leftMargin
+    const position = (distance / totalDistanceReal) * availableWidth + leftMargin
     return position
   }
 
@@ -158,6 +138,17 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
 
   const currentSegmentForMobile = segmentsForDisplay[currentSegmentIndex]
 
+  // Mostrar loading mientras se cargan los datos
+  if (loading) {
+    return (
+      <div className="bg-gray-50 rounded-2xl p-2">
+        <div className="flex items-center justify-center h-[250px]">
+          <div className="text-gray-500">Cargando datos de elevación...</div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-gray-50 rounded-2xl p-2">
       {/* Top Controls - Mobile style */}
@@ -165,6 +156,13 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
         <button className="flex items-center gap-1 px-2 py-1 bg-gray-200/80 text-gray-700 font-semibold rounded-full hover:bg-gray-300 transition-colors text-xs">
           <Settings size={16} />
         </button>
+        {gpxData && (
+          <div className="text-xs text-gray-600">
+            Distancia total: {totalDistanceReal.toFixed(1)} km | 
+            Ascenso: {gpxData.elevationGain.toFixed(0)}m | 
+            Descenso: {gpxData.elevationLoss.toFixed(0)}m
+          </div>
+        )}
       </header>
 
       {/* Combined Chart and Segments Container */}
@@ -193,9 +191,9 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
               </defs>
 
               <YAxis
-                domain={[1500, 3500]}
-                ticks={[1500, 2500, 3500]}
-                tickFormatter={(tick) => `${tick} M`}
+                domain={[minElevation, maxElevation]}
+                ticks={[minElevation, Math.round((minElevation + maxElevation) / 2), maxElevation]}
+                tickFormatter={(tick) => `${Math.round(tick)}m`}
                 axisLine={false}
                 tickLine={false}
                 width={40}
@@ -205,7 +203,7 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
               <XAxis
                 type="number"
                 dataKey="distance"
-                domain={[0, totalDistance]}
+                domain={[0, totalDistanceReal]}
                 axisLine={false}
                 tickLine={false}
                 tick={false}
@@ -233,9 +231,6 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
                 />
               ))}
 
-              {/* Main elevation area with gradient (full route) */}
-              <Area type="monotone" dataKey="elevation" stroke="none" fill="url(#elevationGradient)" dot={false} />
-
               {/* Completed section with red gradient */}
               {(() => {
                 const currentSegment = SEGMENTS_DATA.find(s => s.id === currentSegmentId)
@@ -257,6 +252,15 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
                 }
                 return null
               })()}
+
+              {/* Main elevation area with blue gradient */}
+              <Area 
+                type="monotone" 
+                dataKey="elevation" 
+                stroke="none" 
+                fill="url(#elevationGradient)" 
+                dot={false}
+              />
 
               {/* Solid top line of the elevation - blue for remaining, red for completed */}
               {(() => {
@@ -282,7 +286,7 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
                     <Area 
                       type="monotone" 
                       dataKey="elevation" 
-                      stroke="#1d4ed8" 
+                      stroke="#3b82f6" 
                       fill="none" 
                       strokeWidth={2} 
                       dot={false}

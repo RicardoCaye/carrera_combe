@@ -8,7 +8,7 @@ import { parseGPXFile, generateElevationDataFromGPX, generateDetailedElevationDa
 
 interface ElevationProfileChartProps {
   currentSegmentId: number
-  results?: any // Agregamos los resultados para mostrar información adicional
+  results?: any
 }
 
 export function ElevationProfileChart({ currentSegmentId, results }: ElevationProfileChartProps) {
@@ -24,7 +24,6 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
   const [maxElevation, setMaxElevation] = useState(0)
   const [segmentDataFromGPX, setSegmentDataFromGPX] = useState<any[]>([])
 
-  // Cargar datos del GPX
   useEffect(() => {
     const loadGPXData = async () => {
       try {
@@ -41,14 +40,12 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
           setMaxElevation(gpxData.maxElevation)
           setGpxData(gpxData)
           
-          // Calcular datos de segmentos desde GPX
           const segmentDistances = SEGMENTS_DATA.map(s => s.cumulativeDistanceKm || 0)
           const calculatedSegmentData = calculateSegmentDataFromGPX(gpxData.tracks[0].points, segmentDistances)
           setSegmentDataFromGPX(calculatedSegmentData)
         }
       } catch (error) {
         console.error('Error loading GPX data:', error)
-        // Fallback a datos generados si falla la carga del GPX
         const fallbackData = generateDetailedElevationData()
         setElevationData(fallbackData)
         setTotalDistanceReal(320)
@@ -61,8 +58,7 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
 
     loadGPXData()
   }, [])
-
-  // Función para formatear duración
+  
   const formatDuration = (hours?: number) => {
     if (hours === undefined || hours === null) return "N/A"
     const h = Math.floor(hours)
@@ -70,7 +66,6 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
     return `${h}h ${m}m`
   }
 
-  // Función para obtener datos base del segmento (ahora con datos del GPX si están disponibles)
   const getSegmentBaseData = (segmentId: number) => {
     const baseData = SEGMENTS_DATA.find((s) => s.id === segmentId)
     const gpxSegmentData = segmentDataFromGPX.find((s) => s.segmentId === segmentId)
@@ -89,7 +84,6 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
     return baseData
   }
 
-  // Función para obtener información de resultados del segmento
   const getSegmentResultData = (segmentId: number) => {
     if (!results?.segments) return null
     return results.segments.find((s: any) => s.id === segmentId)
@@ -121,7 +115,6 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
     },
   }))
 
-  // Use ResizeObserver to get the exact chart dimensions for perfect alignment
   useEffect(() => {
     if (!chartRef.current) return
 
@@ -138,7 +131,6 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
     }
   }, [])
 
-  // Función para formatear números con separador de miles
   const formatNumber = (num: number, decimals = 0) => {
     return num.toLocaleString('es-ES', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
   }
@@ -155,16 +147,6 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
     return null
   }
 
-  // Calculate the exact position for a dot based on its distance
-  const calculateDotPosition = (distance: number) => {
-    const leftMargin = 40 // Always use mobile margins
-    const rightMargin = 20
-    const availableWidth = chartWidth - leftMargin - rightMargin
-    const position = (distance / totalDistanceReal) * availableWidth + leftMargin
-    return position
-  }
-
-  // Mobile segment navigation
   const nextSegment = () => {
     setCurrentSegmentIndex((prev) => Math.min(prev + 1, segmentsForDisplay.length - 1))
   }
@@ -175,7 +157,6 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
 
   const currentSegmentForMobile = segmentsForDisplay[currentSegmentIndex]
 
-  // Mostrar loading mientras se cargan los datos
   if (loading) {
     return (
       <div className="bg-gray-50 rounded-2xl p-2">
@@ -186,9 +167,12 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
     )
   }
 
+  // Pre-calculamos la distancia completada para usarla varias veces
+  const currentActiveSegment = SEGMENTS_DATA.find(s => s.id === currentSegmentId)
+  const completedDistance = currentActiveSegment?.cumulativeDistanceKm ?? 0
+
   return (
     <div className="bg-gray-50 rounded-2xl p-2">
-      {/* Top Controls - Mobile style */}
       <header className="flex justify-between items-center mb-4">
         <button className="flex items-center gap-1 px-2 py-1 bg-gray-200/80 text-gray-700 font-semibold rounded-full hover:bg-gray-300 transition-colors text-xs">
           <Settings size={16} />
@@ -201,20 +185,13 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
           </div>
         )}
       </header>
-
-      {/* Combined Chart and Segments Container */}
+      
       <div className="relative">
-        {/* Altimetry Chart Section */}
         <div className="w-full h-[250px]" ref={chartRef}>
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
               data={elevationData}
-              margin={{
-                top: 10,
-                right: 20,
-                left: 40,
-                bottom: 10,
-              }}
+              margin={{ top: 10, right: 20, left: 40, bottom: 10 }}
             >
               <defs>
                 <linearGradient id="elevationGradient" x1="0" y1="0" x2="0" y2="1">
@@ -225,17 +202,15 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
                   <stop offset="0%" stopColor="#ef4444" stopOpacity={0.3} />
                   <stop offset="100%" stopColor="#ef4444" stopOpacity={0} />
                 </linearGradient>
+
+                {/* // NUEVO: Definición del clip-path para la sección completada */}
+                <clipPath id="clipPathCompleted">
+                  <rect x="0" y="0" width={`${(completedDistance / totalDistanceReal) * 100}%`} height="100%" />
+                </clipPath>
               </defs>
 
               <YAxis
                 domain={[Number.isFinite(minElevation) ? minElevation : 0, Number.isFinite(maxElevation) ? maxElevation : 0]}
-                ticks={[
-                  Number.isFinite(minElevation) ? minElevation : 0,
-                  Number.isFinite(minElevation) && Number.isFinite(maxElevation)
-                    ? Math.round((minElevation + maxElevation) / 2)
-                    : 0,
-                  Number.isFinite(maxElevation) ? maxElevation : 0
-                ]}
                 tickFormatter={(tick) => `${formatNumber(Math.round(Number(tick)))}m`}
                 axisLine={false}
                 tickLine={false}
@@ -258,52 +233,21 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
               />
 
               <CartesianGrid strokeDasharray="3 3" horizontal={true} stroke="#e5e7eb" />
+              
+              {/* --- CAPAS VISUALES (SIN INTERACTIVIDAD) --- */}
 
-              {/* Decorative lines - fewer on mobile */}
-              {Array.from({ length: 5 }, (_, i) => (
-                <Area
-                  key={`line-${i + 1}`}
-                  type="monotone"
-                  dataKey={`line_${i + 1}`}
-                  stroke="#60a5fa"
-                  fill="none"
-                  strokeWidth={1}
-                  opacity={0.5}
-                  dot={false}
-                  activeDot={false}
-                />
-              ))}
-
-              {/* Main elevation area con azul siempre debajo */}
+              {/* 1. Área azul de fondo (toda la ruta) */}
               <Area 
                 type="monotone" 
                 dataKey="elevation" 
                 stroke="none" 
                 fill="url(#elevationGradient)" 
                 dot={false}
+                activeDot={false} // MODIFICADO: Desactiva interacción
+                isAnimationActive={false}
               />
 
-              {/* Completed section with red gradient (solo overlay visual) */}
-              {(() => {
-                const currentSegment = SEGMENTS_DATA.find(s => s.id === currentSegmentId)
-                const completedDistance = currentSegment ? (currentSegment.cumulativeDistanceKm || 0) - (currentSegment.distanceKm || 0) : 0
-                if (completedDistance > 0) {
-                  const completedData = elevationData.filter(d => d.distance <= completedDistance)
-                  return (
-                    <Area 
-                      type="monotone" 
-                      dataKey="elevation" 
-                      stroke="none" 
-                      fill="url(#completedGradient)" 
-                      dot={false}
-                      data={completedData}
-                    />
-                  )
-                }
-                return null
-              })()}
-
-              {/* Solid top line of the elevation - blue para todo, rojo solo overlay */}
+              {/* 2. Línea azul superior (toda la ruta) */}
               <Area 
                 type="monotone" 
                 dataKey="elevation" 
@@ -311,32 +255,53 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
                 fill="none" 
                 strokeWidth={2} 
                 dot={false}
+                activeDot={false} // MODIFICADO: Desactiva interacción
+                isAnimationActive={false}
               />
-              {(() => {
-                const currentSegment = SEGMENTS_DATA.find(s => s.id === currentSegmentId)
-                const completedDistance = currentSegment ? (currentSegment.cumulativeDistanceKm || 0) - (currentSegment.distanceKm || 0) : 0
-                if (completedDistance > 0) {
-                  return (
-                    <Area 
-                      type="monotone" 
-                      dataKey="elevation" 
-                      stroke="#ef4444" 
-                      fill="none" 
-                      strokeWidth={2} 
-                      dot={false}
-                      data={elevationData.filter(d => d.distance <= completedDistance)}
-                    />
-                  )
-                }
-                return null
-              })()}
+              
+              {/* 3. Área roja (sección completada) */}
+              {/* Usamos clip-path para 'cortar' el área visualmente sin cambiar los datos */}
+              <Area 
+                type="monotone" 
+                dataKey="elevation" 
+                stroke="none"
+                fill="url(#completedGradient)" 
+                dot={false}
+                activeDot={false} // MODIFICADO: Desactiva interacción
+                isAnimationActive={false}
+                clipPath="url(#clipPathCompleted)" // NUEVO: Aplica el clip-path
+              />
 
-              {/* Add markers for each segment end */}
+              {/* 4. Línea roja (sección completada) */}
+              <Area 
+                type="monotone" 
+                dataKey="elevation" 
+                stroke="#ef4444" 
+                fill="none" 
+                strokeWidth={2} 
+                dot={false}
+                activeDot={false} // MODIFICADO: Desactiva interacción
+                isAnimationActive={false}
+                clipPath="url(#clipPathCompleted)" // NUEVO: Aplica el clip-path
+              />
+
+              {/* --- CAPA DE HOVER (INVISIBLE Y SUPERIOR) --- */}
+              {/* // NUEVO: Esta es la capa que captura el hover en TODA la gráfica */}
+              <Area
+                type="monotone"
+                dataKey="elevation"
+                fill="transparent"
+                stroke="transparent"
+                isAnimationActive={false}
+                activeDot={{ r: 5, stroke: '#f97316' }} // Muestra un punto al hacer hover
+              />
+
+              {/* Markers de segmentos (se mantienen igual) */}
               {segmentsForDisplay.map((segment) => {
                 const dataPoint = elevationData.find((d) => Math.abs(d.distance - segment.cumulativeDist) < 1)
                 if (dataPoint) {
                   const isSelectedInCard = segment.id === currentSegmentForMobile.id
-                  const isCompleted = segment.id < currentSegmentId
+                  const isCompleted = segment.cumulativeDist < completedDistance
                   const isCurrent = segment.id === currentSegmentId
                   return (
                     <ReferenceDot
@@ -356,7 +321,7 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
           </ResponsiveContainer>
         </div>
 
-        {/* Mobile Segment Display - Single segment with navigation */}
+        {/* Mobile Segment Display (sin cambios) */}
         <div className="mt-4 bg-white rounded-lg p-4 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <button
@@ -375,25 +340,24 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
                 className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
                   currentSegmentForMobile.id === currentSegmentId
                     ? "bg-amber-500 text-white"
-                    : currentSegmentForMobile.id < currentSegmentId
+                    : currentSegmentForMobile.cumulativeDist < completedDistance
                       ? "bg-green-500 text-white"
                       : "bg-blue-500 text-white"
                 }`}
               >
                 {currentSegmentForMobile.name}
               </div>
-              {/* Status badge */}
               <div className="mt-1">
                 <span
                   className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                    currentSegmentForMobile.id < currentSegmentId
+                    currentSegmentForMobile.cumulativeDist < completedDistance
                       ? "bg-green-500 text-white"
                       : currentSegmentForMobile.id === currentSegmentId
                         ? "bg-amber-500 text-white"
                         : "bg-slate-500 text-white"
                   }`}
                 >
-                  {currentSegmentForMobile.id < currentSegmentId
+                  {currentSegmentForMobile.cumulativeDist < completedDistance
                     ? "COMPLETED"
                     : currentSegmentForMobile.id === currentSegmentId
                       ? "CURRENT"
@@ -410,8 +374,7 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
               <ChevronRight size={16} />
             </button>
           </div>
-
-          {/* Información básica del segmento */}
+          
           <div className="grid grid-cols-2 gap-4 text-sm mb-4">
             <div>
               <div className="text-gray-600 text-xs">Distancia</div>
@@ -438,7 +401,6 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
             </div>
           </div>
 
-          {/* Información detallada de resultados */}
           {(() => {
             const segmentResult = getSegmentResultData(currentSegmentForMobile.id)
             const baseSegmentData = getSegmentBaseData(currentSegmentForMobile.id)
@@ -449,7 +411,6 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
 
             return (
               <div className="border-t pt-4 space-y-3">
-                {/* Tiempo */}
                 <div className="text-sm">
                   <div className="text-gray-600 text-xs mb-1">Tiempo</div>
                   <div className="font-semibold">
@@ -464,15 +425,13 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
                   </div>
                 </div>
 
-                {/* Ascenso */}
                 {typeof baseSegmentData?.elevationGainM === 'number' && (
                   <div className="text-sm">
                     <div className="text-gray-600 text-xs mb-1">Ascenso</div>
                     <div className="font-semibold">{formatNumber(baseSegmentData.elevationGainM ?? 0)}m</div>
                   </div>
                 )}
-
-                {/* Descenso */}
+                
                 {typeof baseSegmentData?.elevationLossM === 'number' ? (
                   <div className="text-sm">
                     <div className="text-gray-600 text-xs mb-1">Descenso</div>
@@ -480,7 +439,6 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
                   </div>
                 ) : null}
 
-                {/* Nutrición y descanso */}
                 {segmentResult.category === "current" && segmentResult.nutritionPlan ? (
                   <div className="text-sm">
                     <div className="text-gray-600 text-xs mb-1">Nutrición</div>

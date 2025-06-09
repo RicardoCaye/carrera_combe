@@ -156,9 +156,7 @@ export function generateElevationDataFromGPX(points: GPXPoint[]): Array<{distanc
     
     data.push({
       distance: cumulativeDistance,
-      elevation: Math.round(elevation), // Redondear a metros enteros
-      lat: point.lat,
-      lon: point.lon
+      elevation: Math.round(elevation) // Redondear a metros enteros
     })
   }
   
@@ -218,4 +216,64 @@ export function generateDetailedElevationData(): Array<{distance: number, elevat
   }
   
   return data
+}
+
+// Función para calcular datos específicos de segmentos desde GPX
+export function calculateSegmentDataFromGPX(points: GPXPoint[], segmentDistances: number[]): Array<{
+  segmentId: number,
+  distanceKm: number,
+  startElevationM: number,
+  endElevationM: number,
+  elevationGainM: number,
+  elevationLossM: number
+}> {
+  const segmentData: Array<{
+    segmentId: number,
+    distanceKm: number,
+    startElevationM: number,
+    endElevationM: number,
+    elevationGainM: number,
+    elevationLossM: number
+  }> = []
+
+  // Generar datos de elevación con distancia acumulada
+  const elevationData = generateElevationDataFromGPX(points)
+  
+  for (let i = 0; i < segmentDistances.length; i++) {
+    const segmentId = i + 1
+    const startDistance = i === 0 ? 0 : segmentDistances[i - 1]
+    const endDistance = segmentDistances[i]
+    
+    // Encontrar puntos de inicio y fin del segmento
+    const startPoint = elevationData.find(p => Math.abs(p.distance - startDistance) < 0.5) || elevationData[0]
+    const endPoint = elevationData.find(p => Math.abs(p.distance - endDistance) < 0.5) || elevationData[elevationData.length - 1]
+    
+    // Calcular ascenso y descenso dentro del segmento
+    let elevationGain = 0
+    let elevationLoss = 0
+    
+    const segmentPoints = elevationData.filter(p => p.distance >= startDistance && p.distance <= endDistance)
+    
+    for (let j = 1; j < segmentPoints.length; j++) {
+      const prevEle = segmentPoints[j - 1].elevation
+      const currentEle = segmentPoints[j].elevation
+      
+      if (currentEle > prevEle) {
+        elevationGain += (currentEle - prevEle)
+      } else {
+        elevationLoss += (prevEle - currentEle)
+      }
+    }
+    
+    segmentData.push({
+      segmentId,
+      distanceKm: endDistance - startDistance,
+      startElevationM: Math.round(startPoint.elevation),
+      endElevationM: Math.round(endPoint.elevation),
+      elevationGainM: Math.round(elevationGain),
+      elevationLossM: Math.round(elevationLoss)
+    })
+  }
+  
+  return segmentData
 } 

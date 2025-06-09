@@ -60,7 +60,7 @@ export default function RacePlannerPage() {
   return (
     <div className="container mx-auto p-4 space-y-8 bg-slate-50 min-h-screen">
       {/* 🏔️ Perfil de Elevación (Prominente al inicio) */}
-      <ElevationProfileChart currentSegmentId={currentSegmentId} />
+      <ElevationProfileChart currentSegmentId={currentSegmentId} results={results} />
 
       {/* ⚙️ Configuración del Plan */}
       <Accordion type="single" collapsible className="w-full">
@@ -87,23 +87,6 @@ export default function RacePlannerPage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="targetFinishTime" className="text-sm font-medium">
-                      Tiempo Objetivo
-                    </Label>
-                    <Select value={targetFinishTime} onValueChange={setTargetFinishTime}>
-                      <SelectTrigger id="targetFinishTime" className="mt-1">
-                        <SelectValue placeholder="Seleccionar tiempo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {TARGET_FINISH_TIMES.map((time) => (
-                          <SelectItem key={time} value={time}>
-                            {time}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
                     <Label htmlFor="currentSegment" className="text-sm font-medium">
                       Segmento Actual
                     </Label>
@@ -124,45 +107,6 @@ export default function RacePlannerPage() {
                     </Select>
                   </div>
                 </div>
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">Datos Históricos (para segmentos completados)</Label>
-                  {SAMPLE_HISTORICAL_DATA.map((item) => (
-                    <div key={item.segmentId} className="flex gap-2 items-center p-2 border rounded-md bg-slate-50">
-                      <span className="text-xs font-semibold w-24">Seg. {item.segmentId}:</span>
-                      <Input
-                        type="number"
-                        step="0.1"
-                        placeholder="Tiempo (hrs)"
-                        defaultValue={item.actualTimeHours}
-                        onChange={(e) => {
-                          const newData = historicalData.map((hItem) =>
-                            hItem.segmentId === item.segmentId
-                              ? { ...hItem, actualTimeHours: Number.parseFloat(e.target.value) || 0 }
-                              : hItem,
-                          )
-                          setHistoricalData(newData)
-                        }}
-                        className="w-28 h-8 text-xs"
-                        aria-label={`Tiempo histórico para segmento ${item.segmentId}`}
-                      />
-                      <Input
-                        type="number"
-                        placeholder="Rank"
-                        defaultValue={item.rank || ""}
-                        onChange={(e) => {
-                          const newData = historicalData.map((hItem) =>
-                            hItem.segmentId === item.segmentId
-                              ? { ...hItem, rank: Number.parseInt(e.target.value) || undefined }
-                              : hItem,
-                          )
-                          setHistoricalData(newData)
-                        }}
-                        className="w-20 h-8 text-xs"
-                        aria-label={`Ranking histórico para segmento ${item.segmentId}`}
-                      />
-                    </div>
-                  ))}
-                </div>
                 <Button onClick={handleCalculate} className="w-full">
                   <BarChart3 className="mr-2 h-4 w-4" /> Calcular Horario
                 </Button>
@@ -174,90 +118,6 @@ export default function RacePlannerPage() {
 
       {results && (
         <>
-          {/* 📝 Notas por Segmento */}
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-xl flex items-center">
-                <Info className="mr-2 h-6 w-6 text-slate-600" />
-                Notas por Segmento
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {results.segments.map((segment) => {
-                const baseSegmentData = getSegmentBaseData(segment.id)
-                const restDuration = baseSegmentData?.fixedRestHours || 0
-                const sleepDuration = baseSegmentData?.sleepHours || 0
-
-                return (
-                  <div
-                    key={segment.id}
-                    className={`p-4 rounded-lg border-l-4 ${
-                      segment.category === "completed"
-                        ? "bg-green-50 border-green-500"
-                        : segment.category === "current"
-                          ? "bg-amber-50 border-amber-500"
-                          : "bg-slate-50 border-slate-400"
-                    }`}
-                  >
-                    <div className="flex flex-wrap items-center gap-4 text-sm">
-                      <div className="font-semibold text-lg">
-                        S{segment.id}: {segment.name}
-                      </div>
-                      <span
-                        className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                          segment.category === "completed"
-                            ? "bg-green-500 text-white"
-                            : segment.category === "current"
-                              ? "bg-amber-500 text-white"
-                              : "bg-slate-500 text-white"
-                        }`}
-                      >
-                        {segment.category.toUpperCase()}
-                      </span>
-                    </div>
-
-                    <div className="mt-2 grid grid-cols-1 gap-4 text-sm text-slate-700">
-                      {/* Time info */}
-                      <div>
-                        <strong>Tiempo:</strong>{" "}
-                        {segment.category === "completed"
-                          ? `${formatDuration(segment.actualTimeHours)} (Real)`
-                          : `${formatDuration(
-                              segment.plannedTimeHours
-                                ? segment.plannedTimeHours - restDuration - sleepDuration
-                                : undefined,
-                            )} (Planeado)`}
-                        {segment.rank && ` • Rank: ${segment.rank}`}
-                      </div>
-
-                      {/* Distance and elevation */}
-                      <div>
-                        <strong>Distancia:</strong> {baseSegmentData?.distanceKm} km
-                        {baseSegmentData?.elevationGainM && ` • Ascenso: ${baseSegmentData.elevationGainM}m`}
-                      </div>
-
-                      {/* Nutrition and rest */}
-                      <div>
-                        {segment.category === "current" && segment.nutritionPlan ? (
-                          <>
-                            <strong>Nutrición:</strong> Pouch: {segment.nutritionPlan.pouch}, Polvo:{" "}
-                            {segment.nutritionPlan.powder}
-                            {segment.waterLiters && ` • Agua: ${segment.waterLiters.toFixed(1)}L`}
-                          </>
-                        ) : (
-                          <>
-                            {restDuration > 0 && <strong>Descanso:</strong>} {formatDuration(restDuration)}
-                            {sleepDuration > 0 && ` • Sueño: ${formatDuration(sleepDuration)}`}
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </CardContent>
-          </Card>
-
           {/* 🏁 Tiempo Total */}
           <Card className="mt-10 shadow-lg">
             <CardFooter className="p-6 justify-center bg-slate-700 text-white rounded-b-md">

@@ -305,3 +305,5 @@ export function ElevationProfileChart({ currentSegmentId }: ElevationProfileChar
     </div>
   )
 }
+git config --global user.name "Ricardo Cayetano"
+git config --global user.email "ricardo.cayetano.a@gmail.com"

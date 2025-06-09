@@ -58,7 +58,7 @@ export default function RacePlannerPage() {
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-8 space-y-8 bg-slate-50 min-h-screen">
+    <div className="container mx-auto p-4 space-y-8 bg-slate-50 min-h-screen">
       {/* 🏔️ Perfil de Elevación (Prominente al inicio) */}
       <ElevationProfileChart currentSegmentId={currentSegmentId} />
 
@@ -73,7 +73,7 @@ export default function RacePlannerPage() {
           <AccordionContent>
             <Card className="shadow-none border-0">
               <CardContent className="pt-6 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                <div className="grid grid-cols-1 gap-6 items-end">
                   <div>
                     <Label htmlFor="raceStartTime" className="text-sm font-medium">
                       Hora de Inicio
@@ -163,7 +163,7 @@ export default function RacePlannerPage() {
                     </div>
                   ))}
                 </div>
-                <Button onClick={handleCalculate} className="w-full md:w-auto">
+                <Button onClick={handleCalculate} className="w-full">
                   <BarChart3 className="mr-2 h-4 w-4" /> Calcular Horario
                 </Button>
               </CardContent>
@@ -216,7 +216,7 @@ export default function RacePlannerPage() {
                       </span>
                     </div>
 
-                    <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-slate-700">
+                    <div className="mt-2 grid grid-cols-1 gap-4 text-sm text-slate-700">
                       {/* Time info */}
                       <div>
                         <strong>Tiempo:</strong>{" "}

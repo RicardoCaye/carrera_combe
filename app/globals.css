@@ -12,7 +12,21 @@ body {
   }
 }
 
+/* Force mobile layout */
 @layer base {
+  .container {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+  
+  /* Force mobile behavior for all screen sizes */
+  @media (min-width: 768px) {
+    .container {
+      max-width: 480px !important;
+      margin: 0 auto !important;
+    }
+  }
+
   :root {
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;

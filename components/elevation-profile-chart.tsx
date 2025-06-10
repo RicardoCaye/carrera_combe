@@ -40,7 +40,7 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
           setMaxElevation(gpxData.maxElevation)
           setGpxData(gpxData)
           
-          const segmentDistances = SEGMENTS_DATA.map(s => s.cumulativeDistanceKm || 0)
+          const segmentDistances = SEGMENTS_DATA.map(s => s.cumulativeKms || 0)
           const calculatedSegmentData = calculateSegmentDataFromGPX(gpxData.tracks[0].points, segmentDistances)
           setSegmentDataFromGPX(calculatedSegmentData)
         }
@@ -89,11 +89,11 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
     return results.segments.find((s: any) => s.id === segmentId)
   }
 
-  const totalDistance = SEGMENTS_DATA[SEGMENTS_DATA.length - 1].cumulativeDistanceKm || 330.8
+  const totalDistance = SEGMENTS_DATA[SEGMENTS_DATA.length - 1].cumulativeKms || 330.8
 
   const segmentsForDisplay = SEGMENTS_DATA.map((segment, index) => ({
     ...segment,
-    cumulativeDist: segment.cumulativeDistanceKm || 0, 
+    cumulativeDist: segment.cumulativeKms || 0, 
     segmentDist: (() => {
       const gpxSegmentData = segmentDataFromGPX.find((s) => s.segmentId === segment.id)
       return gpxSegmentData ? gpxSegmentData.distanceKm : segment.distanceKm
@@ -169,7 +169,7 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
 
   // Pre-calculamos la distancia completada para usarla varias veces
   const currentActiveSegment = SEGMENTS_DATA.find(s => s.id === currentSegmentId)
-  const completedDistance = currentActiveSegment?.cumulativeDistanceKm ?? 0
+  const completedDistance = currentActiveSegment?.cumulativeKms ?? 0
 
   return (
     <div className="bg-gray-50 rounded-2xl p-2">

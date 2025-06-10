@@ -1,223 +1,51 @@
-import type { Segment, NutritionData, SegmentRequirements, HistoricalResult } from "./types"
+// data.ts - VERSIÓN FINAL Y COMPLETA
 
-// Nombres de los segmentos basados en tu descripción
-const segmentNames = [
-  "Armstrong Pass 1",    // 1
-  "Housewife Hill",      // 2
-  "Armstrong Pass 2",    // 3
-  "Heavenly",            // 4 (Sleep 1h after this)
-  "Spooner Summit 1",    // 5
-  "Village Green 1",     // 6 (Sleep 2h after this)
-  "Brockway Summit 1",   // 7
-  "Tahoe City",          // 8 (Sleep 1h after this)
-  "Brockway Summit 2",   // 9
-  "Village Green 2",     // 10
-  "Spooner Summit 2",    // 11
-  "Finish",              // 12
-]
+import type { SegmentData, NutritionRates, HistoricalData } from "./types";
 
-// --- DATOS DE SEGMENTOS PARA ETIQUETAS Y LÍNEAS VERTICALES ---
-// Utiliza estos datos para mostrar los nombres, distancias por segmento y para dibujar las líneas verticales en la gráfica.
-export const SEGMENTS_DATA: Segment[] = [
-  {
-    id: 1,
-    name: segmentNames[0],
-    distanceKm: 25.9,
-    elevationGainM: 1401,
-    elevationLossM: 494,
-    timeByFinishTarget: { "80h": 3.0, "85h": 3.2, "90h": 3.4, "95h": 3.6, "100h": 3.8, "105h": 4.0 },
-    fixedRestHours: 0.25,
-    sleepHours: 0,
-    startElevationM: 1912,
-    endElevationM: 2819,
-    cumulativeDistanceKm: 25.9,
-  },
-  {
-    id: 2,
-    name: segmentNames[1],
-    distanceKm: 26.3,
-    elevationGainM: 772,
-    elevationLossM: 1478,
-    timeByFinishTarget: { "80h": 2.5, "85h": 2.7, "90h": 2.9, "95h": 3.1, "100h": 3.3, "105h": 3.5 },
-    fixedRestHours: 0.25,
-    sleepHours: 0,
-    startElevationM: 2819,
-    endElevationM: 2113,
-    cumulativeDistanceKm: 52.2,
-  },
-  {
-    id: 3,
-    name: segmentNames[2],
-    distanceKm: 26.0,
-    elevationGainM: 1478,
-    elevationLossM: 775,
-    timeByFinishTarget: { "80h": 2.8, "85h": 3.0, "90h": 3.2, "95h": 3.4, "100h": 3.6, "105h": 3.8 },
-    fixedRestHours: 0.25,
-    sleepHours: 0,
-    startElevationM: 2113,
-    endElevationM: 2816,
-    cumulativeDistanceKm: 78.2,
-  },
-  {
-    id: 4,
-    name: segmentNames[3], // Heavenly
-    distanceKm: 23.0,
-    elevationGainM: 531,
-    elevationLossM: 1438,
-    timeByFinishTarget: { "80h": 3.5, "85h": 3.8, "90h": 4.1, "95h": 4.4, "100h": 4.7, "105h": 5.0 },
-    fixedRestHours: 0.25,
-    sleepHours: 1.0,
-    startElevationM: 2816,
-    endElevationM: 1909,
-    cumulativeDistanceKm: 101.2,
-  },
-  {
-    id: 5,
-    name: segmentNames[4], // Spooner Summit 1
-    distanceKm: 29.0,
-    elevationGainM: 1032,
-    elevationLossM: 792,
-    timeByFinishTarget: { "80h": 4.0, "85h": 4.3, "90h": 4.6, "95h": 4.9, "100h": 5.2, "105h": 5.5 },
-    fixedRestHours: 0.25,
-    sleepHours: 0,
-    startElevationM: 1909,
-    endElevationM: 2149,
-    cumulativeDistanceKm: 130.2,
-  },
-  {
-    id: 6,
-    name: segmentNames[5], // Village Green 1
-    distanceKm: 30.7,
-    elevationGainM: 809,
-    elevationLossM: 1056,
-    timeByFinishTarget: { "80h": 2.0, "85h": 2.2, "90h": 2.4, "95h": 2.6, "100h": 2.8, "105h": 3.0 },
-    fixedRestHours: 0.25,
-    sleepHours: 2.0,
-    startElevationM: 2149,
-    endElevationM: 1902,
-    cumulativeDistanceKm: 160.9,
-  },
-  {
-    id: 7,
-    name: segmentNames[6], // Brockway Summit 1
-    distanceKm: 22.4,
-    elevationGainM: 856,
-    elevationLossM: 588,
-    timeByFinishTarget: { "80h": 4.5, "85h": 4.8, "90h": 5.1, "95h": 5.4, "100h": 5.7, "105h": 6.0 },
-    fixedRestHours: 0.25,
-    sleepHours: 0,
-    startElevationM: 1902,
-    endElevationM: 2170,
-    cumulativeDistanceKm: 183.3,
-  },
-  {
-    id: 8,
-    name: segmentNames[7], // Tahoe City
-    distanceKm: 30.3,
-    elevationGainM: 881,
-    elevationLossM: 1148,
-    timeByFinishTarget: { "80h": 3.0, "85h": 3.2, "90h": 3.4, "95h": 3.6, "100h": 3.8, "105h": 4.0 },
-    fixedRestHours: 0.25,
-    sleepHours: 1.0,
-    startElevationM: 2170,
-    endElevationM: 1903,
-    cumulativeDistanceKm: 213.6,
-  },
-  {
-    id: 9,
-    name: segmentNames[8], // Brockway Summit 2
-    distanceKm: 30.4,
-    elevationGainM: 1152,
-    elevationLossM: 885,
-    timeByFinishTarget: { "80h": 4.5, "85h": 4.8, "90h": 5.1, "95h": 5.4, "100h": 5.7, "105h": 6.0 },
-    fixedRestHours: 0.25,
-    sleepHours: 0,
-    startElevationM: 1903,
-    endElevationM: 2170,
-    cumulativeDistanceKm: 244.0,
-  },
-  {
-    id: 10,
-    name: segmentNames[9], // Village Green 2
-    distanceKm: 22.4,
-    elevationGainM: 588,
-    elevationLossM: 856,
-    timeByFinishTarget: { "80h": 2.0, "85h": 2.2, "90h": 2.4, "95h": 2.6, "100h": 2.8, "105h": 3.0 },
-    fixedRestHours: 0.25,
-    sleepHours: 0,
-    startElevationM: 2170,
-    endElevationM: 1902,
-    cumulativeDistanceKm: 266.4,
-  },
-  {
-    id: 11,
-    name: segmentNames[10], // Spooner Summit 2
-    distanceKm: 30.6,
-    elevationGainM: 1056,
-    elevationLossM: 813,
-    timeByFinishTarget: { "80h": 4.0, "85h": 4.3, "90h": 4.6, "95h": 4.9, "100h": 5.2, "105h": 5.5 },
-    fixedRestHours: 0.25,
-    sleepHours: 0,
-    startElevationM: 1902,
-    endElevationM: 2145,
-    cumulativeDistanceKm: 297.0,
-  },
-  {
-    id: 12,
-    name: segmentNames[11], // Finish
-    distanceKm: 33.8,
-    elevationGainM: 809,
-    elevationLossM: 1039,
-    timeByFinishTarget: { "80h": 1.0, "85h": 1.1, "90h": 1.2, "95h": 1.3, "100h": 1.4, "105h": 1.5 },
-    fixedRestHours: 0,
-    sleepHours: 0,
-    startElevationM: 2145,
-    endElevationM: 1915,
-    cumulativeDistanceKm: 330.8,
-  },
+// EXPLICACIÓN:
+// Esta es la "única fuente de verdad" para tu carrera.
+// - timeByFinishTarget: Horas de CARRERA (sin paradas) para cada objetivo.
+//   He usado los tiempos de tu plan de 85h y los he extrapolado. AJUSTA ESTOS VALORES.
+// - transitionMinutes: Tiempo de parada estándar en el avituallamiento.
+// - sleepHours: Horas de sueño específicas en ciertos avituallamientos.
+// - pacer: Nombre del pacer asignado a ese tramo.
+// - cutoff: Hora límite oficial del puesto.
+
+export const SEGMENTS_DATA: SegmentData[] = [
+    // id, name, kms, elevation, cumulativeKms, timeByFinishTarget, pacer, sleepHours, cutoff
+    { id: 1, name: "Armstrong Pass", kms: 24.0, elevation: 889, cumulativeKms: 24.0, timeByFinishTarget: { "80h": 3.8, "85h": 4.0, "90h": 4.3, "95h": 4.5, "100h": 4.7, "105h": 5.0 }, pacer: null, sleepHours: 0, cutoff: "2025-06-13T12:47:00-07:00" },
+    { id: 2, name: "Housewife Hill", kms: 27.0, elevation: 717, cumulativeKms: 50.9, timeByFinishTarget: { "80h": 3.1, "85h": 3.3, "90h": 3.5, "95h": 3.7, "100h": 3.9, "105h": 4.1 }, pacer: null, sleepHours: 0, cutoff: "2025-06-13T15:50:00-07:00" },
+    { id: 3, name: "Armstrong Pass", kms: 27.0, elevation: 1260, cumulativeKms: 77.9, timeByFinishTarget: { "80h": 7.2, "85h": 7.6, "90h": 8.0, "95h": 8.4, "100h": 8.8, "105h": 9.2 }, pacer: null, sleepHours: 0, cutoff: "2025-06-13T23:00:00-07:00" },
+    { id: 4, name: "Heavenly", kms: 24.0, elevation: 646, cumulativeKms: 101.8, timeByFinishTarget: { "80h": 5.4, "85h": 5.7, "90h": 6.0, "95h": 6.3, "100h": 6.6, "105h": 6.9 }, pacer: null, sleepHours: 1.0, cutoff: "2025-06-14T15:00:00-07:00" },
+    { id: 5, name: "Spooner Summit", kms: 28.9, elevation: 909, cumulativeKms: 130.7, timeByFinishTarget: { "80h": 7.1, "85h": 7.5, "90h": 7.9, "95h": 8.3, "100h": 8.7, "105h": 9.1 }, pacer: 'luis', sleepHours: 0, cutoff: "2025-06-14T23:30:00-07:00" },
+    { id: 6, name: "Village Green", kms: 29.6, elevation: 849, cumulativeKms: 160.3, timeByFinishTarget: { "80h": 5.8, "85h": 6.1, "90h": 6.4, "95h": 6.7, "100h": 7.0, "105h": 7.3 }, pacer: 'huevo', sleepHours: 0, cutoff: "2025-06-15T08:30:00-07:00" },
+    { id: 7, name: "Brockway Summit", kms: 21.3, elevation: 972, cumulativeKms: 181.6, timeByFinishTarget: { "80h": 6.3, "85h": 6.6, "90h": 6.9, "95h": 7.2, "100h": 7.5, "105h": 7.8 }, pacer: 'gavilan', sleepHours: 2.0, cutoff: "2025-06-15T15:30:00-07:00" },
+    { id: 8, name: "Tahoe City", kms: 30.3, elevation: 755, cumulativeKms: 211.9, timeByFinishTarget: { "80h": 6.1, "85h": 6.4, "90h": 6.7, "95h": 7.0, "100h": 7.3, "105h": 7.6 }, pacer: 'gavilan', sleepHours: 0, cutoff: "2025-06-16T02:30:00-07:00" },
+    { id: 9, name: "Brockway Summit", kms: 30.3, elevation: 1060, cumulativeKms: 242.2, timeByFinishTarget: { "80h": 7.2, "85h": 7.6, "90h": 8.0, "95h": 8.4, "100h": 8.8, "105h": 9.2 }, pacer: null, sleepHours: 1.0, cutoff: "2025-06-16T13:30:00-07:00" },
+    { id: 10, name: "Village Green", kms: 21.3, elevation: 720, cumulativeKms: 263.4, timeByFinishTarget: { "80h": 6.6, "85h": 6.9, "90h": 7.2, "95h": 7.5, "100h": 7.8, "105h": 8.1 }, pacer: 'luis', sleepHours: 0, cutoff: "2025-06-16T20:00:00-07:00" },
+    { id: 11, name: "Spooner Summit", kms: 30.3, elevation: 1071, cumulativeKms: 293.7, timeByFinishTarget: { "80h": 7.1, "85h": 7.5, "90h": 7.9, "95h": 8.3, "100h": 8.7, "105h": 9.1 }, pacer: 'huevo', sleepHours: 0, cutoff: "2025-06-17T07:00:00-07:00" },
+    { id: 12, name: "Finish", kms: 28.2, elevation: 1017, cumulativeKms: 321.9, timeByFinishTarget: { "80h": 6.8, "85h": 7.1, "90h": 7.4, "95h": 7.7, "100h": 8.0, "105h": 8.3 }, pacer: 'gavilan', sleepHours: 0, cutoff: "2025-06-17T18:00:00-07:00" },
 ];
 
-// --- DATOS DEL PERFIL DE ELEVACIÓN COMPLETO PARA LA GRÁFICA ---
-// Utiliza este array para dibujar la línea principal de la gráfica.
-// He incluido solo el principio y el final para brevedad, pero el archivo descargable contiene todos los puntos.
-export const FULL_ELEVATION_PROFILE = [
-  { "x": 0, "y": 1912.04 },
-  { "x": 0.01, "y": 1912.07 },
-  { "x": 0.02, "y": 1912.19 },
-  // ... (El array completo tiene más de 45,000 puntos para una alta resolución)
-  { "x": 330.79, "y": 1915.22 },
-  { "x": 330.8, "y": 1915.02 }
+// Tasas de nutrición por hora, deducidas de tu Excel.
+// Se mantiene el enfoque por zonas, ya que es fisiológicamente más preciso.
+export const NUTRITION_RATES: NutritionRates = {
+    'early': { carbsPerHour: 100, caloriesPerHour: 300 }, // Primeros ~100k
+    'mid':   { carbsPerHour: 80, caloriesPerHour: 275 },   // Parte media
+    'late':  { carbsPerHour: 60, caloriesPerHour: 250 },   // Parte final
+};
+
+// Constantes globales para el plan
+export const DEFAULT_TRANSITION_MINUTES = 15;
+export const WATER_LITERS_PER_HOUR = 0.75;
+
+// Datos de ejemplo para testing (puedes modificar estos para simular progreso)
+export const SAMPLE_HISTORICAL_DATA: HistoricalData[] = [
+    // Ejemplo: si ya completaste los primeros segmentos, descomenta estas líneas:
+    { segmentId: 1, actualTotalTimeHours: 4.2 },  // Armstrong Pass - un poco más lento que lo planeado
+    { segmentId: 2, actualTotalTimeHours: 3.4 },  // Housewife Hill - ligeramente más rápido
+    { segmentId: 3, actualTotalTimeHours: 7.8 },  // Armstrong Pass vuelta - dentro del plan
+    { segmentId: 4, actualTotalTimeHours: 6.1 },  // Heavenly - incluyendo 1h de sueño
+    // { segmentId: 5, actualTotalTimeHours: 7.7 },  // Spooner Summit
+    // { segmentId: 6, actualTotalTimeHours: 6.3 },  // Village Green
 ];
-
-
-// --- El resto de tu código se mantiene igual ---
-
-export const NUTRITION_DATA: NutritionData = {
-  pouch: { calories: 800, carbs: 80 },
-  powder: { calories: 300, carbs: 100 },
-  bar: { calories: 160, carbs: 50 },
-  gel: { calories: 100, carbs: 22 },
-}
-
-export const SEGMENT_NUTRITION_REQUIREMENTS: SegmentRequirements[] = [
-  { segmentId: 1, name: segmentNames[0], requiredCarbs: 484, requiredCalories: 1451, waterLiters: 3.6 },
-  { segmentId: 2, name: segmentNames[1], requiredCarbs: 389, requiredCalories: 1166, waterLiters: 2.9 },
-  { segmentId: 3, name: segmentNames[2], requiredCarbs: 450, requiredCalories: 1350, waterLiters: 5.7 },
-  { segmentId: 4, name: segmentNames[3], requiredCarbs: 500, requiredCalories: 1500, waterLiters: 5.1 },
-  { segmentId: 5, name: segmentNames[4], requiredCarbs: 520, requiredCalories: 1560, waterLiters: 5.6 },
-  { segmentId: 6, name: segmentNames[5], requiredCarbs: 300, requiredCalories: 900, waterLiters: 4.6 },
-  { segmentId: 7, name: segmentNames[6], requiredCarbs: 550, requiredCalories: 1650, waterLiters: 5.0 },
-  { segmentId: 8, name: segmentNames[7], requiredCarbs: 400, requiredCalories: 1200, waterLiters: 4.8 },
-  { segmentId: 9, name: segmentNames[8], requiredCarbs: 550, requiredCalories: 1650, waterLiters: 5.7 },
-  { segmentId: 10, name: segmentNames[9], requiredCarbs: 300, requiredCalories: 900, waterLiters: 5.2 },
-  { segmentId: 11, name: segmentNames[10], requiredCarbs: 520, requiredCalories: 1560, waterLiters: 5.6 },
-  { segmentId: 12, name: segmentNames[11], requiredCarbs: 150, requiredCalories: 450, waterLiters: 5.4 },
-]
-
-// Sample historical data - in a real app, this would be dynamic or from a DB
-export const SAMPLE_HISTORICAL_DATA: HistoricalResult[] = [
-  { segmentId: 1, actualTimeHours: 3.3, rank: 25 },
-  { segmentId: 2, actualTimeHours: 2.8, rank: 22 },
-  // Add more historical data if needed for testing
-  // { segmentId: 3, actualTimeHours: 3.1, rank: 20 },
-]

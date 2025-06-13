@@ -147,8 +147,8 @@ export function useRaceTracker(segmentsData: any[]) {
       // Primera llamada
       fetchData();
 
-      // Configurar intervalo para actualizar cada 30 segundos
-      const intervalId = setInterval(fetchData, 30000);
+      // Configurar intervalo para actualizar cada 5 minutos
+      const intervalId = setInterval(fetchData, 300000);
 
       // Limpiar el intervalo cuando el componente se desmonte
       return () => clearInterval(intervalId);

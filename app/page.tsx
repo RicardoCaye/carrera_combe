@@ -96,7 +96,12 @@ export default function RacePlannerPage() {
       </Card>
 
       {/* Perfil de Elevación */}
-      <ElevationProfileChart currentSegmentId={currentSegmentId} results={null} />
+      <ElevationProfileChart 
+        currentSegmentId={currentSegmentId} 
+        results={null}
+        segmentsData={segmentsData}
+        currentSegment={currentSegment}
+      />
 
       {/* Selector de Segmento */}
       <Card>

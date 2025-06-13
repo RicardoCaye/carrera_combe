@@ -2,16 +2,18 @@
 
 import { useState, useRef, useEffect } from "react"
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceDot, CartesianGrid } from "recharts"
-import { Settings, Utensils, Droplet, BedDouble, Package, MapPin, ChevronLeft, ChevronRight } from "lucide-react"
+import { Settings, Utensils, Droplet, BedDouble, Package, MapPin, ChevronLeft, ChevronRight, Mountain, TrendingUp, TrendingDown, Calendar, Clock, Zap, AlertCircle } from "lucide-react"
 import { SEGMENTS_DATA } from "@/lib/data"
 import { parseGPXFile, generateElevationDataFromGPX, generateDetailedElevationData, calculateSegmentDataFromGPX } from "@/lib/gpx-parser"
 
 interface ElevationProfileChartProps {
   currentSegmentId: number
   results?: any
+  segmentsData?: any[]
+  currentSegment?: any
 }
 
-export function ElevationProfileChart({ currentSegmentId, results }: ElevationProfileChartProps) {
+export function ElevationProfileChart({ currentSegmentId, results, segmentsData, currentSegment }: ElevationProfileChartProps) {
   const [activeView, setActiveView] = useState("Profile")
   const chartRef = useRef<HTMLDivElement>(null)
   const [chartWidth, setChartWidth] = useState(0)
@@ -329,48 +331,39 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
         </div>
 
         {/* Mobile Segment Display (sin cambios) */}
-        <div className="mt-4 bg-white rounded-lg p-4 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
+        <div className="mt-4">
+          {/* Navegación entre segmentos */}
+          <div className="flex items-center justify-between mb-4 bg-white rounded-lg p-3 shadow-sm">
             <button
               onClick={prevSegment}
               disabled={currentSegmentIndex === 0}
               className="p-2 rounded-full bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 transition-colors"
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft size={20} />
             </button>
 
             <div className="text-center flex-1">
-              <div className="text-xs text-gray-500 mb-1">
+              <div className="text-sm text-gray-500">
                 Segmento {currentSegmentForMobile.id} de {segmentsForDisplay.length}
               </div>
-              <div
-                className={`inline-block px-4 py-2 rounded-full text-sm font-bold ${
-                  currentSegmentForMobile.id === currentSegmentId
-                    ? "bg-amber-500 text-white"
-                    : currentSegmentForMobile.cumulativeDist < completedDistance
-                      ? "bg-green-500 text-white"
-                      : "bg-blue-500 text-white"
-                }`}
-              >
+              <div className="text-lg font-bold">
                 {currentSegmentForMobile.name}
               </div>
-              <div className="mt-2">
-                <span
-                  className={`text-xs font-semibold px-3 py-1 rounded-full ${
-                    currentSegmentForMobile.cumulativeDist < completedDistance
-                      ? "bg-green-100 text-green-800"
-                      : currentSegmentForMobile.id === currentSegmentId
-                        ? "bg-amber-100 text-amber-800"
-                        : "bg-gray-100 text-gray-800"
-                  }`}
-                >
-                  {currentSegmentForMobile.cumulativeDist < completedDistance
-                    ? "COMPLETADO"
+              <span
+                className={`text-xs font-semibold px-3 py-1 rounded-full inline-block mt-1 ${
+                  currentSegmentForMobile.cumulativeDist < completedDistance
+                    ? "bg-green-100 text-green-800"
                     : currentSegmentForMobile.id === currentSegmentId
-                      ? "ACTUAL"
-                      : "FUTURO"}
-                </span>
-              </div>
+                      ? "bg-blue-100 text-blue-800"
+                      : "bg-gray-100 text-gray-800"
+                }`}
+              >
+                {currentSegmentForMobile.cumulativeDist < completedDistance
+                  ? "Completado"
+                  : currentSegmentForMobile.id === currentSegmentId
+                    ? "Actual"
+                    : "Futuro"}
+              </span>
             </div>
 
             <button
@@ -378,111 +371,207 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
               disabled={currentSegmentIndex === segmentsForDisplay.length - 1}
               className="p-2 rounded-full bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 transition-colors"
             >
-              <ChevronRight size={16} />
+              <ChevronRight size={20} />
             </button>
           </div>
-          
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div className="bg-gray-50 rounded-lg p-3">
-              <div className="text-gray-600 text-xs mb-1">Distancia</div>
-              <div className="font-bold text-lg">{formatNumber(currentSegmentForMobile.segmentDist, 1)} km</div>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-3">
-              <div className="text-gray-600 text-xs mb-1">Total</div>
-              <div className="font-bold text-lg">{formatNumber(Math.round(currentSegmentForMobile.cumulativeDist), 0)} km</div>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-3">
-              <div className="text-gray-600 text-xs mb-1">Elevación</div>
-              <div className="font-bold text-sm">
-                {formatNumber(currentSegmentForMobile.startElevationM)}m → {formatNumber(currentSegmentForMobile.endElevationM)}m
+
+          {/* Card con información del segmento - mismo estilo que SegmentCard */}
+          <div className="bg-white rounded-lg p-4 shadow-sm space-y-4">
+            {/* Información de distancia y elevación */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-gray-50 rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Mountain className="h-5 w-5 text-gray-600" />
+                  <span className="text-sm font-medium text-gray-600">Distancia</span>
+                </div>
+                <p className="text-2xl font-bold">{formatNumber(currentSegmentForMobile.segmentDist, 1)} km</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-medium text-gray-600">Elevación</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center">
+                    <TrendingUp className="h-4 w-4 text-green-600 mr-1" />
+                    <span className="font-bold text-green-700">
+                      +{currentSegment && currentSegmentForMobile.id === currentSegment.id 
+                        ? Math.round(currentSegment.elevationGain) 
+                        : Math.round(currentSegmentForMobile.elevation || 0)}m
+                    </span>
+                  </div>
+                  <div className="flex items-center">
+                    <TrendingDown className="h-4 w-4 text-red-600 mr-1" />
+                    <span className="font-bold text-red-700">
+                      -{currentSegment && currentSegmentForMobile.id === currentSegment.id 
+                        ? Math.round(currentSegment.elevationLoss) 
+                        : Math.round(currentSegmentForMobile.elevation || 0)}m
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="bg-gray-50 rounded-lg p-3">
-              <div className="text-gray-600 text-xs mb-1">Servicios</div>
-              <div className="flex gap-2 mt-1">
+
+            {/* Información de nutrición - placeholder por ahora */}
+            <div className="bg-orange-50 rounded-lg p-4">
+              <h4 className="text-base font-semibold mb-3 flex items-center gap-2">
+                <Zap className="h-5 w-5 text-orange-600" />
+                Nutrición del Segmento
+              </h4>
+              
+              <div className="grid grid-cols-3 gap-3 mb-3">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-orange-600">
+                    {currentSegment && currentSegmentForMobile.id === currentSegment.id 
+                      ? `${Math.round(currentSegment.nutrition.carbs)}g` 
+                      : '--g'}
+                  </p>
+                  <p className="text-xs text-gray-600">Carbohidratos</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-red-600">
+                    {currentSegment && currentSegmentForMobile.id === currentSegment.id 
+                      ? Math.round(currentSegment.nutrition.calories) 
+                      : '--'}
+                  </p>
+                  <p className="text-xs text-gray-600">Calorías</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-blue-600">
+                    {currentSegment && currentSegmentForMobile.id === currentSegment.id 
+                      ? `${currentSegment.nutrition.liters.toFixed(1)}L` 
+                      : '--L'}
+                  </p>
+                  <p className="text-xs text-gray-600">Agua</p>
+                </div>
+              </div>
+
+              {/* Detalle de productos si hay datos */}
+              {currentSegment && currentSegmentForMobile.id === currentSegment.id && (
+                <div className="border-t border-orange-200 pt-3">
+                  <div className="grid grid-cols-4 gap-2">
+                    {currentSegment.nutrition.polvo > 0 && (
+                      <div className="text-center bg-white rounded-lg p-2">
+                        <p className="text-lg font-bold">{currentSegment.nutrition.polvo}</p>
+                        <p className="text-xs text-gray-600">Polvo</p>
+                      </div>
+                    )}
+                    {currentSegment.nutrition.barras > 0 && (
+                      <div className="text-center bg-white rounded-lg p-2">
+                        <p className="text-lg font-bold">{currentSegment.nutrition.barras}</p>
+                        <p className="text-xs text-gray-600">Barras</p>
+                      </div>
+                    )}
+                    {currentSegment.nutrition.geles > 0 && (
+                      <div className="text-center bg-white rounded-lg p-2">
+                        <p className="text-lg font-bold">{currentSegment.nutrition.geles}</p>
+                        <p className="text-xs text-gray-600">Geles</p>
+                      </div>
+                    )}
+                    {currentSegment.nutrition.pouch > 0 && (
+                      <div className="text-center bg-white rounded-lg p-2">
+                        <p className="text-lg font-bold">{currentSegment.nutrition.pouch}</p>
+                        <p className="text-xs text-gray-600">Pouch</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Información de tiempo */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                <span className="text-sm text-gray-600 flex items-center gap-1">
+                  <Calendar className="h-4 w-4" />
+                  Inicio:
+                </span>
+                <span className="font-medium text-sm">
+                  {currentSegment && currentSegmentForMobile.id === currentSegment.id 
+                    ? new Date(currentSegment.timing.start).toLocaleString("es-ES", {
+                        weekday: "short",
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                      })
+                    : '--'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                <span className="text-sm text-gray-600">Fin estimado:</span>
+                <span className="font-medium text-sm">
+                  {currentSegment && currentSegmentForMobile.id === currentSegment.id 
+                    ? new Date(currentSegment.timing.end).toLocaleString("es-ES", {
+                        weekday: "short",
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                      })
+                    : '--'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-2 bg-blue-50 rounded-lg">
+                <span className="text-sm text-gray-600 flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  Duración:
+                </span>
+                <span className="font-bold text-lg">
+                  {currentSegment && currentSegmentForMobile.id === currentSegment.id 
+                    ? formatDuration(currentSegment.timing.estimatedHours)
+                    : '--'}
+                </span>
+              </div>
+              {currentSegment && currentSegmentForMobile.id === currentSegment.id && currentSegment.timing.cutoff && (
+                <div className="flex items-center justify-between p-2 bg-red-50 rounded-lg">
+                  <span className="text-sm text-gray-600 flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4 text-red-600" />
+                    Cutoff:
+                  </span>
+                  <span className="font-medium text-red-700">
+                    {new Date(currentSegment.timing.cutoff).toLocaleString("es-ES", {
+                      weekday: "short",
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    })}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Servicios disponibles */}
+            <div className="border-t pt-3">
+              <div className="text-sm font-medium text-gray-600 mb-2">Servicios disponibles:</div>
+              <div className="flex gap-3">
                 {currentSegmentForMobile.aid.water && (
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-full">
                     <Droplet size={16} className="text-blue-600" />
-                    <span className="text-xs">0</span>
+                    <span className="text-sm font-medium">Agua</span>
                   </div>
                 )}
                 {currentSegmentForMobile.aid.food && (
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 bg-gray-50 px-3 py-1 rounded-full">
                     <Utensils size={16} className="text-gray-600" />
-                    <span className="text-xs">{currentSegmentForMobile.aid.food}</span>
+                    <span className="text-sm font-medium">Comida</span>
                   </div>
                 )}
-                {currentSegmentForMobile.aid.dropbag && <Package size={16} className="text-gray-600" />}
-                {currentSegmentForMobile.aid.sleep && <BedDouble size={16} className="text-purple-600" />}
+                {currentSegmentForMobile.aid.dropbag && (
+                  <div className="flex items-center gap-1 bg-purple-50 px-3 py-1 rounded-full">
+                    <Package size={16} className="text-purple-600" />
+                    <span className="text-sm font-medium">Dropbag</span>
+                  </div>
+                )}
+                {currentSegmentForMobile.aid.sleep && (
+                  <div className="flex items-center gap-1 bg-indigo-50 px-3 py-1 rounded-full">
+                    <BedDouble size={16} className="text-indigo-600" />
+                    <span className="text-sm font-medium">Descanso</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
-
-          {(() => {
-            const segmentResult = getSegmentResultData(currentSegmentForMobile.id)
-            const baseSegmentData = getSegmentBaseData(currentSegmentForMobile.id)
-            const restDuration = baseSegmentData?.fixedRestHours || 0
-            const sleepDuration = baseSegmentData?.sleepHours || 0
-
-            if (!segmentResult) return null
-
-            return (
-              <div className="border-t pt-4 space-y-3">
-                <div className="text-sm">
-                  <div className="text-gray-600 text-xs mb-1">Tiempo</div>
-                  <div className="font-semibold">
-                    {segmentResult.category === "completed"
-                      ? `${formatDuration(segmentResult.actualTimeHours)} (Real)`
-                      : `${formatDuration(
-                          segmentResult.plannedTimeHours
-                            ? segmentResult.plannedTimeHours - restDuration - sleepDuration
-                            : undefined,
-                        )} (Planeado)`}
-                    {segmentResult.rank && ` • Rank: ${formatNumber(segmentResult.rank)}`}
-                  </div>
-                </div>
-
-                {typeof baseSegmentData?.elevationGainM === 'number' && (
-                  <div className="text-sm">
-                    <div className="text-gray-600 text-xs mb-1">Ascenso</div>
-                    <div className="font-semibold">{formatNumber(baseSegmentData.elevationGainM ?? 0)}m</div>
-                  </div>
-                )}
-                
-                {typeof baseSegmentData?.elevationLossM === 'number' ? (
-                  <div className="text-sm">
-                    <div className="text-gray-600 text-xs mb-1">Descenso</div>
-                    <div className="font-semibold">{formatNumber(baseSegmentData.elevationLossM ?? 0)}m</div>
-                  </div>
-                ) : null}
-
-                {segmentResult.category === "current" && segmentResult.nutritionPlan ? (
-                  <div className="text-sm">
-                    <div className="text-gray-600 text-xs mb-1">Nutrición</div>
-                    <div className="font-semibold">
-                      Pouch: {segmentResult.nutritionPlan.pouch}, Polvo: {segmentResult.nutritionPlan.powder}
-                      {segmentResult.waterLiters && ` • Agua: ${formatNumber(segmentResult.waterLiters, 1)}L`}
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    {restDuration > 0 && (
-                      <div className="text-sm">
-                        <div className="text-gray-600 text-xs mb-1">Descanso</div>
-                        <div className="font-semibold">{formatDuration(restDuration)}</div>
-                      </div>
-                    )}
-                    {sleepDuration > 0 && (
-                      <div className="text-sm">
-                        <div className="text-gray-600 text-xs mb-1">Sueño</div>
-                        <div className="font-semibold">{formatDuration(sleepDuration)}</div>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )
-          })()}
         </div>
       </div>
     </div>

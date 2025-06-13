@@ -58,6 +58,13 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
 
     loadGPXData()
   }, [])
+
+  useEffect(() => {
+    const index = SEGMENTS_DATA.findIndex(s => s.id === currentSegmentId)
+    if (index !== -1) {
+      setCurrentSegmentIndex(index)
+    }
+  }, [currentSegmentId])
   
   const formatDuration = (hours?: number) => {
     if (hours === undefined || hours === null) return "N/A"
@@ -327,17 +334,17 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
             <button
               onClick={prevSegment}
               disabled={currentSegmentIndex === 0}
-              className="p-2 rounded-full bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-2 rounded-full bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 transition-colors"
             >
               <ChevronLeft size={16} />
             </button>
 
             <div className="text-center flex-1">
               <div className="text-xs text-gray-500 mb-1">
-                Segmento {currentSegmentIndex + 1} de {segmentsForDisplay.length}
+                Segmento {currentSegmentForMobile.id} de {segmentsForDisplay.length}
               </div>
               <div
-                className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
+                className={`inline-block px-4 py-2 rounded-full text-sm font-bold ${
                   currentSegmentForMobile.id === currentSegmentId
                     ? "bg-amber-500 text-white"
                     : currentSegmentForMobile.cumulativeDist < completedDistance
@@ -347,21 +354,21 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
               >
                 {currentSegmentForMobile.name}
               </div>
-              <div className="mt-1">
+              <div className="mt-2">
                 <span
-                  className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                  className={`text-xs font-semibold px-3 py-1 rounded-full ${
                     currentSegmentForMobile.cumulativeDist < completedDistance
-                      ? "bg-green-500 text-white"
+                      ? "bg-green-100 text-green-800"
                       : currentSegmentForMobile.id === currentSegmentId
-                        ? "bg-amber-500 text-white"
-                        : "bg-slate-500 text-white"
+                        ? "bg-amber-100 text-amber-800"
+                        : "bg-gray-100 text-gray-800"
                   }`}
                 >
                   {currentSegmentForMobile.cumulativeDist < completedDistance
-                    ? "COMPLETED"
+                    ? "COMPLETADO"
                     : currentSegmentForMobile.id === currentSegmentId
-                      ? "CURRENT"
-                      : "FUTURE"}
+                      ? "ACTUAL"
+                      : "FUTURO"}
                 </span>
               </div>
             </div>
@@ -369,34 +376,44 @@ export function ElevationProfileChart({ currentSegmentId, results }: ElevationPr
             <button
               onClick={nextSegment}
               disabled={currentSegmentIndex === segmentsForDisplay.length - 1}
-              className="p-2 rounded-full bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-2 rounded-full bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 transition-colors"
             >
               <ChevronRight size={16} />
             </button>
           </div>
           
-          <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-            <div>
-              <div className="text-gray-600 text-xs">Distancia</div>
-              <div className="font-semibold">{formatNumber(currentSegmentForMobile.segmentDist, 1)} km</div>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="bg-gray-50 rounded-lg p-3">
+              <div className="text-gray-600 text-xs mb-1">Distancia</div>
+              <div className="font-bold text-lg">{formatNumber(currentSegmentForMobile.segmentDist, 1)} km</div>
             </div>
-            <div>
-              <div className="text-gray-600 text-xs">Total</div>
-              <div className="font-semibold">{formatNumber(Math.round(currentSegmentForMobile.cumulativeDist), 0)} km</div>
+            <div className="bg-gray-50 rounded-lg p-3">
+              <div className="text-gray-600 text-xs mb-1">Total</div>
+              <div className="font-bold text-lg">{formatNumber(Math.round(currentSegmentForMobile.cumulativeDist), 0)} km</div>
             </div>
-            <div>
-              <div className="text-gray-600 text-xs">Elevación</div>
-              <div className="font-semibold">
+            <div className="bg-gray-50 rounded-lg p-3">
+              <div className="text-gray-600 text-xs mb-1">Elevación</div>
+              <div className="font-bold text-sm">
                 {formatNumber(currentSegmentForMobile.startElevationM)}m → {formatNumber(currentSegmentForMobile.endElevationM)}m
               </div>
             </div>
-            <div>
-              <div className="text-gray-600 text-xs">Servicios</div>
-              <div className="flex gap-1 mt-1">
-                {currentSegmentForMobile.aid.food && <Utensils size={14} className="text-gray-600" />}
-                {currentSegmentForMobile.aid.water && <Droplet size={14} className="text-blue-600" />}
-                {currentSegmentForMobile.aid.dropbag && <Package size={14} className="text-gray-600" />}
-                {currentSegmentForMobile.aid.sleep && <BedDouble size={14} className="text-purple-600" />}
+            <div className="bg-gray-50 rounded-lg p-3">
+              <div className="text-gray-600 text-xs mb-1">Servicios</div>
+              <div className="flex gap-2 mt-1">
+                {currentSegmentForMobile.aid.water && (
+                  <div className="flex items-center gap-1">
+                    <Droplet size={16} className="text-blue-600" />
+                    <span className="text-xs">0</span>
+                  </div>
+                )}
+                {currentSegmentForMobile.aid.food && (
+                  <div className="flex items-center gap-1">
+                    <Utensils size={16} className="text-gray-600" />
+                    <span className="text-xs">{currentSegmentForMobile.aid.food}</span>
+                  </div>
+                )}
+                {currentSegmentForMobile.aid.dropbag && <Package size={16} className="text-gray-600" />}
+                {currentSegmentForMobile.aid.sleep && <BedDouble size={16} className="text-purple-600" />}
               </div>
             </div>
           </div>

@@ -8,12 +8,14 @@ import { Flag, MapPin, Activity } from "lucide-react"
 
 import { ElevationProfileChart } from "@/components/elevation-profile-chart"
 import { SegmentCard } from "@/components/segment-card"
+import { RaceTracker } from "@/components/race-tracker"
 import { parseNutritionCSV, parseSegmentDataCSV, combineSegmentData } from "@/lib/csv-data"
 
 export default function RacePlannerPage() {
   const [currentSegmentId, setCurrentSegmentId] = useState<number>(1)
   const [segmentsData, setSegmentsData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [manualMode, setManualMode] = useState(false)
 
   useEffect(() => {
     const loadCSVData = async () => {
@@ -47,6 +49,13 @@ export default function RacePlannerPage() {
     loadCSVData()
   }, [])
 
+  // Función para actualizar la ubicación desde el tracker
+  const handleLocationUpdate = (segmentId: number) => {
+    if (!manualMode) {
+      setCurrentSegmentId(segmentId)
+    }
+  }
+
   const currentSegment = segmentsData.find(s => s.id === currentSegmentId)
   const completedSegments = segmentsData.filter(s => s.id < currentSegmentId)
   const totalDistance = segmentsData.length > 0 ? segmentsData[segmentsData.length - 1].cumulativeKm : 0
@@ -64,6 +73,12 @@ export default function RacePlannerPage() {
 
   return (
     <div className="container mx-auto p-4 space-y-6 bg-slate-50 min-h-screen">
+      {/* Tracker en Vivo */}
+      <RaceTracker 
+        onLocationUpdate={handleLocationUpdate} 
+        segmentsData={segmentsData}
+      />
+
       {/* Header con información general */}
       <Card className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
         <CardHeader>
@@ -106,20 +121,32 @@ export default function RacePlannerPage() {
       {/* Selector de Segmento */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <MapPin className="mr-2 h-5 w-5" />
-            Seleccionar Segmento
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center">
+              <MapPin className="mr-2 h-5 w-5" />
+              Seleccionar Segmento
+            </span>
+            <label className="flex items-center text-sm font-normal">
+              <input
+                type="checkbox"
+                checked={manualMode}
+                onChange={(e) => setManualMode(e.target.checked)}
+                className="mr-2"
+              />
+              Modo Manual
+            </label>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div>
               <Label htmlFor="currentSegment" className="text-sm font-medium mb-2 block">
-                Segmento Actual de la Carrera
+                Segmento Actual de la Carrera {!manualMode && "(Actualización automática activada)"}
               </Label>
               <Select
                 value={String(currentSegmentId)}
                 onValueChange={(value) => setCurrentSegmentId(Number(value))}
+                disabled={!manualMode}
               >
                 <SelectTrigger id="currentSegment" className="w-full">
                   <SelectValue placeholder="Seleccionar segmento" />

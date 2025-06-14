@@ -7,18 +7,67 @@ import { Activity, MapPin, Timer, TrendingUp } from "lucide-react";
 import { useRaceTracker } from "@/hooks/use-race-tracker";
 
 interface RaceTrackerProps {
-  onLocationUpdate: (segmentId: number) => void;
+  onLocationUpdate: (segmentId: number, lat?: number, lon?: number) => void;
   segmentsData: any[];
+  setCorredorPosition?: (pos: { lat: number; lon: number } | undefined) => void;
+  setRaceApiData?: (data: any) => void;
 }
 
-export function RaceTracker({ onLocationUpdate, segmentsData }: RaceTrackerProps) {
+function transformarDatosApi(raceData: any) {
+  if (!raceData) return {};
+  // Transformar y traducir todos los campos relevantes
+  const getNum = (str: string, factor = 1) => {
+    if (!str) return undefined;
+    const num = parseFloat(str.replace(/[^\d.\-]/g, ''));
+    return isNaN(num) ? undefined : (num * factor);
+  };
+  return {
+    estado: raceData['Race Status'] || 'N/A',
+    ultimaActualizacion: raceData["Last Update Rec'd"] || 'N/A',
+    velocidadActual: getNum(raceData['Current speed'], 1.60934)?.toFixed(1) + ' km/h' || 'N/A',
+    velocidadMedia: getNum(raceData['Route average speed'], 1.60934)?.toFixed(1) + ' km/h' || 'N/A',
+    velocidadMov: getNum(raceData['Moving Average Speed'], 1.60934)?.toFixed(1) + ' km/h' || 'N/A',
+    distancia: getNum(raceData['Route mile'], 1.60934)?.toFixed(1) + ' km' || 'N/A',
+    desnivel: getNum(raceData['Elevation Gain'], 0.3048)?.toFixed(0) + ' m' || 'N/A',
+    elevacion: getNum(raceData['Current Elevation'], 0.3048)?.toFixed(0) + ' m' || 'N/A',
+    distanciaDia: getNum(raceData['Route distance per day'], 1.60934)?.toFixed(1) + ' km' || 'N/A',
+    tiempoMov: raceData['Moving Time'] || 'N/A',
+    tiempoParado: raceData['Stopped Time'] || 'N/A',
+    siguienteWp: raceData['Next waypoint'] || 'N/A',
+    distSiguienteWp: getNum(raceData['Distance to next waypoint'], 1.60934)?.toFixed(1) + ' km' || 'N/A',
+    llegadaWp: raceData['Est. arrival at waypoint'] || 'N/A',
+  };
+}
+
+export function RaceTracker({ onLocationUpdate, segmentsData, setCorredorPosition, setRaceApiData }: RaceTrackerProps) {
   const { raceData, currentLocation, loading, error } = useRaceTracker(segmentsData);
 
   useEffect(() => {
     if (currentLocation?.segmentId) {
-      onLocationUpdate(currentLocation.segmentId);
+      let lat: number | undefined = undefined;
+      let lon: number | undefined = undefined;
+      if (raceData && raceData['Latitude'] && raceData['Longitude']) {
+        lat = parseFloat(raceData['Latitude']);
+        lon = parseFloat(raceData['Longitude']);
+        if (!isNaN(lat) && !isNaN(lon)) {
+          if (setCorredorPosition) setCorredorPosition({ lat, lon });
+          onLocationUpdate(currentLocation.segmentId, lat, lon);
+        } else {
+          if (setCorredorPosition) setCorredorPosition(undefined);
+          onLocationUpdate(currentLocation.segmentId);
+        }
+      } else {
+        if (setCorredorPosition) setCorredorPosition(undefined);
+        onLocationUpdate(currentLocation.segmentId);
+      }
     }
-  }, [currentLocation?.segmentId, onLocationUpdate]);
+  }, [currentLocation?.segmentId, onLocationUpdate, raceData, setCorredorPosition]);
+
+  useEffect(() => {
+    if (setRaceApiData && raceData) {
+      setRaceApiData(transformarDatosApi(raceData));
+    }
+  }, [raceData, setRaceApiData]);
 
   if (loading && !raceData) {
     return (

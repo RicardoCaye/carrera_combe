@@ -5,17 +5,22 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Flag, MapPin, Activity } from "lucide-react"
+import dynamic from 'next/dynamic'
 
 import { ElevationProfileChart } from "@/components/elevation-profile-chart"
 import { SegmentCard } from "@/components/segment-card"
 import { RaceTracker } from "@/components/race-tracker"
 import { parseNutritionCSV, parseSegmentDataCSV, combineSegmentData } from "@/lib/csv-data"
 
+const RaceMap = dynamic(() => import('@/components/RaceMap'), { ssr: false })
+
 export default function RacePlannerPage() {
   const [currentSegmentId, setCurrentSegmentId] = useState<number>(1)
   const [segmentsData, setSegmentsData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [manualMode, setManualMode] = useState(false)
+  const [corredorPosition, setCorredorPosition] = useState<{ lat: number; lon: number } | undefined>(undefined)
+  const [raceApiData, setRaceApiData] = useState<any>({})
 
   useEffect(() => {
     const loadCSVData = async () => {
@@ -50,9 +55,12 @@ export default function RacePlannerPage() {
   }, [])
 
   // Función para actualizar la ubicación desde el tracker
-  const handleLocationUpdate = (segmentId: number) => {
+  const handleLocationUpdate = (segmentId: number, lat?: number, lon?: number) => {
     if (!manualMode) {
       setCurrentSegmentId(segmentId)
+    }
+    if (lat !== undefined && lon !== undefined) {
+      setCorredorPosition({ lat, lon })
     }
   }
 
@@ -73,11 +81,70 @@ export default function RacePlannerPage() {
 
   return (
     <div className="container mx-auto p-4 space-y-6 bg-slate-50 min-h-screen">
+      {/* Card de datos principales de la API */}
+      <Card className="bg-gradient-to-r from-red-600 to-orange-400 text-white shadow-xl">
+        <CardHeader>
+          <CardTitle className="text-2xl flex items-center gap-3">
+            <Activity className="h-7 w-7" />
+            Estado en Vivo del Corredor
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-base">
+            <div>
+              <span className="font-semibold">Estado:</span> {raceApiData.estado || 'N/A'}
+            </div>
+            <div>
+              <span className="font-semibold">Última actualización:</span> {raceApiData.ultimaActualizacion || 'N/A'}
+            </div>
+            <div>
+              <span className="font-semibold">Distancia total:</span> {raceApiData.distancia || 'N/A'}
+            </div>
+            <div>
+              <span className="font-semibold">Velocidad actual:</span> {raceApiData.velocidadActual || 'N/A'}
+            </div>
+            <div>
+              <span className="font-semibold">Velocidad media:</span> {raceApiData.velocidadMedia || 'N/A'}
+            </div>
+            <div>
+              <span className="font-semibold">Velocidad mov.:</span> {raceApiData.velocidadMov || 'N/A'}
+            </div>
+            <div>
+              <span className="font-semibold">Desnivel acumulado:</span> {raceApiData.desnivel || 'N/A'}
+            </div>
+            <div>
+              <span className="font-semibold">Elevación actual:</span> {raceApiData.elevacion || 'N/A'}
+            </div>
+            <div>
+              <span className="font-semibold">Distancia/día:</span> {raceApiData.distanciaDia || 'N/A'}
+            </div>
+            <div>
+              <span className="font-semibold">Tiempo en movimiento:</span> {raceApiData.tiempoMov || 'N/A'}
+            </div>
+            <div>
+              <span className="font-semibold">Tiempo parado:</span> {raceApiData.tiempoParado || 'N/A'}
+            </div>
+            <div>
+              <span className="font-semibold">Siguiente punto:</span> {raceApiData.siguienteWp || 'N/A'}
+            </div>
+            <div>
+              <span className="font-semibold">Distancia a siguiente:</span> {raceApiData.distSiguienteWp || 'N/A'}
+            </div>
+            <div>
+              <span className="font-semibold">Llegada estimada:</span> {raceApiData.llegadaWp || 'N/A'}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
       {/* Tracker en Vivo */}
       <RaceTracker 
-        onLocationUpdate={handleLocationUpdate} 
+        onLocationUpdate={(segmentId: number, lat?: number, lon?: number) => handleLocationUpdate(segmentId, lat, lon)}
         segmentsData={segmentsData}
+        setCorredorPosition={setCorredorPosition}
+        setRaceApiData={setRaceApiData}
       />
+      {/* Mapa de la ruta y posición */}
+      <RaceMap corredorPosition={corredorPosition} />
 
       {/* Header con información general */}
       <Card className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">

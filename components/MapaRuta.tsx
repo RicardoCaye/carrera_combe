@@ -14,43 +14,33 @@ export default function MapaRuta() {
   useEffect(() => {
     async function fetchData() {
       try {
-        console.log("Obteniendo datos del tracker...");
-        
-        // Usar nuestra API route local
+        console.log("[FRONT] Solicitando datos a /api/tracker/jorge-combe ...");
         const res = await fetch("/api/tracker/jorge-combe");
-
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
-
         const data = await res.json();
-        console.log("Datos recibidos:", data);
-
+        console.log("[FRONT] Datos recibidos:", data);
         if (data.error) {
           throw new Error(data.error);
         }
-
-        // Establecer los datos
         if (data.puntos && data.puntos.length > 0) {
           setPuntos(data.puntos);
-          console.log("Puntos cargados:", data.puntos.length);
+          console.log(`[FRONT] Puntos cargados: ${data.puntos.length}`);
         }
-
         if (data.bandera) {
           setBandera(data.bandera);
           setTooltipText(data.tooltipText || "");
           setPopupHtml(data.popupHtml || "");
-          console.log("Bandera establecida en:", data.bandera);
+          console.log("[FRONT] Bandera establecida en:", data.bandera);
         }
-
         setCargando(false);
       } catch (err) {
-        console.error("Error obteniendo datos:", err);
+        console.error("[FRONT] Error obteniendo datos:", err);
         setError(`Error: ${err instanceof Error ? err.message : 'Error desconocido'}`);
         setCargando(false);
       }
     }
-
     fetchData();
   }, []);
 
@@ -75,6 +65,7 @@ export default function MapaRuta() {
   });
 
   if (cargando) {
+    console.log("[FRONT] Cargando mapa...");
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-lg">Cargando mapa...</div>
@@ -83,6 +74,7 @@ export default function MapaRuta() {
   }
 
   if (error) {
+    console.error("[FRONT] Error mostrado en UI:", error);
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-red-500">{error}</div>
@@ -91,6 +83,7 @@ export default function MapaRuta() {
   }
 
   if (puntos.length === 0 && !bandera) {
+    console.warn("[FRONT] No se encontraron datos de la ruta");
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-gray-500">No se encontraron datos de la ruta</div>
@@ -100,6 +93,7 @@ export default function MapaRuta() {
 
   // Centro del mapa: bandera si existe, sino el último punto de la ruta
   const centro = bandera || (puntos.length > 0 ? puntos[puntos.length - 1] : [38.779350, -120.000060]);
+  console.log("[FRONT] Renderizando mapa. Centro:", centro);
 
   return (
     <div className="w-full h-96 rounded-lg overflow-hidden shadow-lg">
@@ -122,28 +116,31 @@ export default function MapaRuta() {
         )}
         
         {/* Marcadores pequeños para cada punto del historial */}
-        {puntos.map((punto, index) => (
-          <CircleMarker
-            key={index}
-            center={punto}
-            radius={4}
-            pathOptions={{
-              fillColor: "#888888",
-              color: "#666666",
-              weight: 1,
-              opacity: 0.8,
-              fillOpacity: 0.6
-            }}
-          >
-            <Popup>
-              <div>
-                <b>Punto #{index + 1}</b><br/>
-                Lat: {Array.isArray(punto) ? punto[0].toFixed(6) : 'N/A'}°<br/>
-                Lon: {Array.isArray(punto) ? punto[1].toFixed(6) : 'N/A'}°
-              </div>
-            </Popup>
-          </CircleMarker>
-        ))}
+        {puntos.map((punto, index) => {
+          console.log(`[FRONT] Pintando punto #${index + 1}:`, punto);
+          return (
+            <CircleMarker
+              key={index}
+              center={punto}
+              radius={4}
+              pathOptions={{
+                fillColor: "#888888",
+                color: "#666666",
+                weight: 1,
+                opacity: 0.8,
+                fillOpacity: 0.6
+              }}
+            >
+              <Popup>
+                <div>
+                  <b>Punto #{index + 1}</b><br/>
+                  Lat: {Array.isArray(punto) ? punto[0].toFixed(6) : 'N/A'}°<br/>
+                  Lon: {Array.isArray(punto) ? punto[1].toFixed(6) : 'N/A'}°
+                </div>
+              </Popup>
+            </CircleMarker>
+          );
+        })}
         
         {/* Bandera en la última posición */}
         {bandera && (
